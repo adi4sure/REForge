@@ -1,0 +1,82 @@
+services:
+  # ── Frontend (Nginx serving built Vite app) ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - reforge-net
+    restart: unless-stopped
+
+  # ── Backend (Node.js API) ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads_data:/app/uploads
+      - output_data:/app/outputs
+      - ghidra_projects:/app/ghidra_projects
+      - db_data:/app/data
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      FRONTEND_URL: http://localhost
+      DB_PATH: /app/data/reforge.db
+      UPLOAD_DIR: /app/uploads
+      OUTPUT_DIR: /app/outputs
+      GHIDRA_PROJECTS: /app/ghidra_projects
+      JADX_CMD: /opt/jadx/bin/jadx
+      GHIDRA_HOME: /opt/ghidra
+      JWT_SECRET: ${JWT_SECRET:-change-this-in-production-32chars}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-this-in-production-32char}
+    depends_on:
+      - jadx-worker
+      - ghidra-worker
+    networks:
+      - reforge-net
+    restart: unless-stopped
+
+  # ── JADX Worker (APK decompiler) ─────────────────────────────────────────────
+  jadx-worker:
+    build:
+      context: ./workers/jadx
+      dockerfile: Dockerfile
+    volumes:
+      - uploads_data:/app/uploads
+      - output_data:/app/outputs
+    networks:
+      - reforge-net
+    restart: unless-stopped
+
+  # ── Ghidra Worker (Binary decompiler) ────────────────────────────────────────
+  ghidra-worker:
+    build:
+      context: ./workers/ghidra
+      dockerfile: Dockerfile
+    volumes:
+      - uploads_data:/app/uploads
+      - output_data:/app/outputs
+      - ghidra_projects:/app/ghidra_projects
+    environment:
+      JAVA_OPTS: "-Xmx4g"
+    networks:
+      - reforge-net
+    restart: unless-stopped
+
+volumes:
+  uploads_data:
+  output_data:
+  ghidra_projects:
+  db_data:
+
+networks:
+  reforge-net:
+    driver: bridge
