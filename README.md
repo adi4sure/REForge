@@ -512,5 +512,6 @@ Built with: [JADX](https://github.com/skylot/jadx) · [Ghidra](https://ghidra-sr
 **[⭐ Star this repo](https://github.com/adi4sure/REForge)** if REForge helped your investigation
 
 Made with 🖤 for the security community
-
 </div>
+Developed By - Aditya Raj Chourassia  
+---[All Rights Reserved.2026]---
